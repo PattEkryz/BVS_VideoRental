@@ -1,193 +1,155 @@
 ﻿using System;
+using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
-using BVS_VideoRental.Data;
+using Microsoft.Data.SqlClient;
 
-namespace BVS_VideoRental.Forms
+namespace BVS_VideoRental
 {
-    public class LoginForm : Form
+    public partial class LoginForm : Form
     {
-        private readonly TextBox txtUsername = new TextBox();
-        private readonly TextBox txtPassword = new TextBox();
-        private readonly Button btnLogin = new Button();
-        private readonly LinkLabel linkRegister = new LinkLabel();
-        private readonly Label lblError = new Label();
+        // UI Controls
+        private TextBox txtUsername = new TextBox();
+        private TextBox txtPassword = new TextBox();
+        private Button btnLogin = new Button();
+        private Button btnRegister = new Button();
 
-        public User? AuthenticatedUser { get; private set; }
+        private SqlConnection connection;
 
         public LoginForm()
         {
-            InitializeUI();
+            InitializeComponents();
+            connection = new SqlConnection(GetConnectionString());
         }
 
-        private void InitializeUI()
+        private void InitializeComponents()
         {
             // Form setup
-            Text = "BVS Video Rental - Login";
-            ClientSize = new Size(450, 350);
-            StartPosition = FormStartPosition.CenterScreen;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            BackColor = Color.White;
-            Padding = new Padding(30);
+            this.Text = "BVS Video Rental - Login";
+            this.Size = new Size(350, 250);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
 
-            // Title label
-            var lblTitle = new Label
+            // Username Label and TextBox
+            Label lblUsername = new Label
             {
-                Text = "Welcome to BVS Video Rental",
-                Font = new Font("Segoe UI", 18, FontStyle.Bold),
-                Dock = DockStyle.Top,
-                Height = 80,
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(50, 50, 50)
+                Text = "Username:",
+                Location = new Point(50, 50),
+                Size = new Size(70, 20)
             };
 
-            // Username field
-            var pnlUsername = new Panel
+            txtUsername = new TextBox
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                Padding = new Padding(0, 10, 0, 0)
+                Location = new Point(130, 50),
+                Size = new Size(150, 20)
             };
 
-            var lblUser = new Label
+            // Password Label and TextBox
+            Label lblPassword = new Label
             {
-                Text = "USERNAME",
-                Dock = DockStyle.Top,
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(100, 100, 100)
+                Text = "Password:",
+                Location = new Point(50, 80),
+                Size = new Size(70, 20)
             };
 
-            txtUsername.Dock = DockStyle.Top;
-            txtUsername.Height = 35;
-            txtUsername.Font = new Font("Segoe UI", 11);
-            txtUsername.BorderStyle = BorderStyle.FixedSingle;
-
-            pnlUsername.Controls.Add(txtUsername);
-            pnlUsername.Controls.Add(lblUser);
-
-            // Password field
-            var pnlPassword = new Panel
+            txtPassword = new TextBox
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                Padding = new Padding(0, 10, 0, 0)
+                Location = new Point(130, 80),
+                Size = new Size(150, 20),
+                PasswordChar = '*'
             };
 
-            var lblPass = new Label
+            // Login Button
+            btnLogin = new Button
             {
-                Text = "PASSWORD",
-                Dock = DockStyle.Top,
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(100, 100, 100)
+                Text = "Login",
+                Location = new Point(130, 120),
+                Size = new Size(70, 30)
             };
+            btnLogin.Click += btnLogin_Click;
 
-            txtPassword.Dock = DockStyle.Top;
-            txtPassword.Height = 35;
-            txtPassword.Font = new Font("Segoe UI", 11);
-            txtPassword.BorderStyle = BorderStyle.FixedSingle;
-            txtPassword.PasswordChar = '•';
-
-            pnlPassword.Controls.Add(txtPassword);
-            pnlPassword.Controls.Add(lblPass);
-
-            // Login button
-            btnLogin.Text = "LOGIN";
-            btnLogin.Dock = DockStyle.Top;
-            btnLogin.Height = 45;
-            btnLogin.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            btnLogin.BackColor = Color.FromArgb(0, 122, 204);
-            btnLogin.ForeColor = Color.White;
-            btnLogin.FlatStyle = FlatStyle.Flat;
-            btnLogin.FlatAppearance.BorderSize = 0;
-            btnLogin.Cursor = Cursors.Hand;
-            btnLogin.Click += BtnLogin_Click;
-
-            // Register link
-            linkRegister.Text = "Don't have an account? Register here";
-            linkRegister.Dock = DockStyle.Top;
-            linkRegister.Padding = new Padding(0, 15, 0, 0);
-            linkRegister.TextAlign = ContentAlignment.MiddleCenter;
-            linkRegister.LinkColor = Color.FromArgb(0, 122, 204);
-            linkRegister.ActiveLinkColor = Color.FromArgb(0, 86, 143);
-            linkRegister.LinkClicked += LinkRegister_LinkClicked;
-
-            // Error label
-            lblError.Dock = DockStyle.Top;
-            lblError.Height = 40;
-            lblError.ForeColor = Color.Red;
-            lblError.TextAlign = ContentAlignment.MiddleCenter;
-            lblError.Visible = false;
+            // Register Button
+            btnRegister = new Button
+            {
+                Text = "Register",
+                Location = new Point(210, 120),
+                Size = new Size(70, 30)
+            };
+            btnRegister.Click += btnRegister_Click;
 
             // Add controls to form
-            Controls.Add(linkRegister);
-            Controls.Add(btnLogin);
-            Controls.Add(pnlPassword);
-            Controls.Add(pnlUsername);
-            Controls.Add(lblError);
-            Controls.Add(lblTitle);
+            this.Controls.Add(lblUsername);
+            this.Controls.Add(txtUsername);
+            this.Controls.Add(lblPassword);
+            this.Controls.Add(txtPassword);
+            this.Controls.Add(btnLogin);
+            this.Controls.Add(btnRegister);
         }
 
-        private async void BtnLogin_Click(object? sender, EventArgs e)
+        private static string GetConnectionString()
         {
-            lblError.Visible = false;
+            return "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=C:\\Users\\SKYE\\Documents\\BoggyVideoStore.mdf;Integrated Security=True;";
+        }
 
-            if (string.IsNullOrWhiteSpace(txtUsername.Text))
+        private void btnLogin_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
             {
-                ShowError("Please enter username");
+                MessageBox.Show("Please enter both username and password", "Validation Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(txtPassword.Text))
-            {
-                ShowError("Please enter password");
-                return;
-            }
-
-            btnLogin.Enabled = false;
-            btnLogin.Text = "AUTHENTICATING...";
-            btnLogin.BackColor = Color.Gray;
+            string username = txtUsername.Text.Trim();
+            string password = txtPassword.Text;
 
             try
             {
-                AuthenticatedUser = DatabaseHelper.AuthenticateUser(txtUsername.Text, txtPassword.Text);
+                using (SqlConnection conn = new SqlConnection(GetConnectionString()))
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT UserID, IsAdmin FROM Users WHERE Username=@username AND Password=@password",
+                        conn))
+                    {
+                        cmd.Parameters.AddWithValue("@username", username);
+                        cmd.Parameters.AddWithValue("@password", password);
 
-                if (AuthenticatedUser != null)
-                {
-                    DialogResult = DialogResult.OK;
-                    Close();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                bool isAdmin = reader.GetBoolean(reader.GetOrdinal("IsAdmin"));
+                                MainForm mainForm = new MainForm(isAdmin);
+                                mainForm.Show();
+                                this.Hide();
+                            }
+                            else
+                            {
+                                MessageBox.Show("Invalid username or password", "Login Failed",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
                 }
-                else
-                {
-                    ShowError("Invalid username or password");
-                }
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show($"Database error: {ex.Message}", "Login Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                ShowError($"Login error: {ex.Message}");
-            }
-            finally
-            {
-                btnLogin.Enabled = true;
-                btnLogin.Text = "LOGIN";
-                btnLogin.BackColor = Color.FromArgb(0, 122, 204);
+                MessageBox.Show($"Unexpected error: {ex.Message}", "Login Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void ShowError(string message)
+        private void btnRegister_Click(object sender, EventArgs e)
         {
-            lblError.Text = message;
-            lblError.Visible = true;
-        }
-
-        private void LinkRegister_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
-        {
-            var registerForm = new RegisterForm();
-            if (registerForm.ShowDialog() == DialogResult.OK)
-            {
-                txtUsername.Text = registerForm.Username;
-                txtPassword.Focus();
-            }
+            RegistrationForm regForm = new RegistrationForm();
+            regForm.ShowDialog();
         }
     }
 }
